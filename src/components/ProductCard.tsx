@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { Plus } from 'lucide-react';
 import { Product } from '../types';
-import { Button } from './ui/button';
+import { Button } from '@/components/ui/button';
 
 interface ProductCardProps {
   product: Product;
