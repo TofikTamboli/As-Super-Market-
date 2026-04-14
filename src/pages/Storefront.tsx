@@ -7,9 +7,8 @@ import ProductCard from '../components/ProductCard';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from '../components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
-import { ShoppingCart, Search, LogOut, Package, Trash2, Plus, Minus, Home, User, ShoppingBasket, ClipboardList, CreditCard, MapPin, Phone } from 'lucide-react';
+import { Search, LogOut, Package, Trash2, Plus, Minus, Home, User, ShoppingBasket, ClipboardList, CreditCard, MapPin, Phone } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -58,8 +57,6 @@ export default function Storefront() {
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [cart, setCart] = useState<OrderItem[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('UPI');
@@ -112,36 +109,6 @@ export default function Storefront() {
     );
   }, [products, searchQuery]);
 
-  const addToCart = (product: Product) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.productId === product.id);
-      if (existing) {
-        return prev.map(item => 
-          item.productId === product.id 
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
-      return [...prev, { productId: product.id, title: product.title, price: product.price, quantity: 1 }];
-    });
-    toast.success(`${product.title} added to cart`);
-  };
-
-  const removeFromCart = (productId: string) => {
-    setCart(prev => prev.filter(item => item.productId !== productId));
-  };
-
-  const updateQuantity = (productId: string, delta: number) => {
-    setCart(prev => prev.map(item => {
-      if (item.productId === productId) {
-        const newQty = Math.max(1, item.quantity + delta);
-        return { ...item, quantity: newQty };
-      }
-      return item;
-    }));
-  };
-
-  const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const checkoutTotal = checkoutItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
   const handleBuyNow = (product: Product) => {
@@ -154,17 +121,27 @@ export default function Storefront() {
     setIsCheckoutModalOpen(true);
   };
 
-  const handleCartCheckout = () => {
-    setCheckoutItems(cart);
-    setIsCheckoutModalOpen(true);
-    setIsCartOpen(false);
+  const validatePhone = (num: string) => {
+    const phoneRegex = /^[6-9]\d{9}$/;
+    return phoneRegex.test(num);
   };
 
   const handleCheckout = async () => {
-    if (!address || !phone) {
-      toast.error('Please provide address and phone number');
+    if (!address) {
+      toast.error('Please provide a delivery address');
       return;
     }
+    
+    if (!phone) {
+      toast.error('Please provide a phone number');
+      return;
+    }
+
+    if (!validatePhone(phone)) {
+      toast.error('Please enter a valid 10-digit phone number');
+      return;
+    }
+
     if (checkoutItems.length === 0) {
       toast.error('No items to checkout');
       return;
@@ -180,15 +157,10 @@ export default function Storefront() {
         phone,
         items: checkoutItems,
         paymentMode,
-        total: checkoutTotal + 40, // Including delivery
+        total: checkoutTotal, // Delivery charge removed
         isCompleted: false,
         createdAt: serverTimestamp(),
       });
-      
-      // If we checked out from cart, clear the cart
-      if (JSON.stringify(checkoutItems) === JSON.stringify(cart)) {
-        setCart([]);
-      }
       
       setAddress('');
       setPhone('');
@@ -247,106 +219,6 @@ export default function Storefront() {
             Profile
           </span>
           
-          <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
-            <SheetTrigger className="relative rounded-xl h-10 w-10 hover:bg-black/5 flex items-center justify-center transition-colors">
-              <ShoppingCart className="w-5 h-5" />
-              {cart.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-background">
-                  {cart.reduce((s, i) => s + i.quantity, 0)}
-                </span>
-              )}
-            </SheetTrigger>
-            <SheetContent className="w-full sm:max-w-md glass-drawer border-l-white/40 p-0 flex flex-col rounded-l-3xl">
-              <SheetHeader className="p-6 border-b border-black/5">
-                <SheetTitle className="text-xl font-bold">Your Basket</SheetTitle>
-              </SheetHeader>
-
-              
-              <div className="flex-1 overflow-y-auto p-6">
-                {cart.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-text-main/40 gap-4">
-                    <Package className="w-12 h-12 opacity-20" />
-                    <p>Your cart is empty</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {cart.map((item) => (
-                      <div key={item.productId} className="flex justify-between items-center py-3 border-b border-black/5">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-text-main">{item.title}</span>
-                          <span className="text-xs text-text-muted">{item.quantity} unit{item.quantity > 1 ? 's' : ''} × ₹{item.price}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2 bg-black/5 rounded-lg p-1">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-6 w-6 rounded-md"
-                              onClick={() => updateQuantity(item.productId, -1)}
-                            >
-                              <Minus className="w-3 h-3" />
-                            </Button>
-                            <span className="w-4 text-center text-xs font-medium">{item.quantity}</span>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-6 w-6 rounded-md"
-                              onClick={() => updateQuantity(item.productId, 1)}
-                            >
-                              <Plus className="w-3 h-3" />
-                            </Button>
-                          </div>
-                          <div className="text-sm font-bold">₹{item.price * item.quantity}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {cart.length > 0 && (
-                <div className="p-6 border-t border-black/5 bg-white/20 space-y-4 mt-auto">
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-text-muted">Subtotal</span>
-                      <span>₹{cartTotal}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-text-muted">Delivery</span>
-                      <span>₹40</span>
-                    </div>
-                    <div className="flex justify-between text-lg font-bold pt-2 border-t border-black/5">
-                      <span>Total</span>
-                      <span>₹{cartTotal + 40}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 pt-2">
-                    <Input 
-                      placeholder="Delivery Address" 
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      className="bg-white/50 border-black/10 rounded-xl h-10"
-                    />
-                    <Input 
-                      placeholder="Phone Number" 
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="bg-white/50 border-black/10 rounded-xl h-10"
-                    />
-                  </div>
-                  
-                  <Button 
-                    className="w-full h-12 rounded-xl bg-text-main hover:bg-text-main/90 text-white font-semibold transition-all active:scale-[0.98]"
-                    onClick={handleCartCheckout}
-                  >
-                    Proceed to Checkout
-                  </Button>
-                </div>
-              )}
-            </SheetContent>
-          </Sheet>
-          
           <Button variant="ghost" size="icon" className="rounded-xl h-11 w-11" onClick={handleLogout}>
             <LogOut className="w-5 h-5 text-text-main/60" />
           </Button>
@@ -389,7 +261,6 @@ export default function Storefront() {
                       <ProductCard 
                         key={product.id} 
                         product={product} 
-                        onAddToCart={addToCart} 
                         onBuyNow={handleBuyNow}
                       />
                     ))}
@@ -592,13 +463,9 @@ export default function Storefront() {
                 <span className="text-text-muted">Items ({checkoutItems.length})</span>
                 <span className="font-medium">₹{checkoutTotal}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-text-muted">Delivery Fee</span>
-                <span className="font-medium">₹40</span>
-              </div>
               <div className="flex justify-between text-lg font-bold pt-2 border-t border-black/10">
                 <span>Total Amount</span>
-                <span className="text-primary">₹{checkoutTotal + 40}</span>
+                <span className="text-primary">₹{checkoutTotal}</span>
               </div>
             </div>
 

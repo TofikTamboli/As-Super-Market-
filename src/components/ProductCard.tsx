@@ -6,12 +6,11 @@ import { Button } from './ui/button';
 
 interface ProductCardProps {
   product: Product;
-  onAddToCart: (product: Product) => void;
   onBuyNow: (product: Product) => void;
   key?: React.Key;
 }
 
-export default function ProductCard({ product, onAddToCart, onBuyNow }: ProductCardProps) {
+export default function ProductCard({ product, onBuyNow }: ProductCardProps) {
   return (
     <motion.div 
       whileHover={{ y: -4 }}
@@ -41,21 +40,12 @@ export default function ProductCard({ product, onAddToCart, onBuyNow }: ProductC
             <span className="text-lg font-bold text-text-main">₹{product.price}</span>
             <span className="text-xs text-text-muted">Incl. taxes</span>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <Button 
-              onClick={() => onAddToCart(product)}
-              variant="outline"
-              className="rounded-xl border-primary/20 text-primary hover:bg-primary/5 font-semibold text-xs h-9 transition-transform active:scale-95"
-            >
-              ADD +
-            </Button>
-            <Button 
-              onClick={() => onBuyNow(product)}
-              className="rounded-xl bg-primary hover:bg-primary/90 text-white font-semibold text-xs h-9 transition-transform active:scale-95"
-            >
-              BUY NOW
-            </Button>
-          </div>
+          <Button 
+            onClick={() => onBuyNow(product)}
+            className="w-full rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-sm h-11 transition-transform active:scale-95 shadow-lg shadow-primary/20"
+          >
+            BUY NOW
+          </Button>
         </div>
       </div>
     </motion.div>
