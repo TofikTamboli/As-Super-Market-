@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, where, deleteDoc, doc } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { Product, OrderItem, PaymentMode, Order } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -65,6 +65,7 @@ export default function Storefront() {
   const [checkoutItems, setCheckoutItems] = useState<OrderItem[]>([]);
   const [activeTab, setActiveTab] = useState<'store' | 'orders' | 'profile'>('store');
   const [clientOrders, setClientOrders] = useState<Order[]>([]);
+  const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
@@ -173,6 +174,17 @@ export default function Storefront() {
       toast.error('Failed to place order: ' + error.message);
     } finally {
       setIsCheckingOut(false);
+    }
+  };
+
+  const deleteOrder = async () => {
+    if (!orderToDelete) return;
+    try {
+      await deleteDoc(doc(db, 'orders', orderToDelete));
+      toast.success('Order removed from history');
+      setOrderToDelete(null);
+    } catch (error: any) {
+      toast.error('Failed to remove order');
     }
   };
 
@@ -327,8 +339,19 @@ export default function Storefront() {
                       ))}
                     </div>
                     <div className="pt-4 border-t border-black/5 flex justify-between items-center">
-                      <span className="font-bold">Total Paid</span>
-                      <span className="text-lg font-bold text-success">₹{order.total}</span>
+                      <div className="flex items-center gap-4">
+                        <span className="font-bold">Total Paid</span>
+                        <span className="text-lg font-bold text-success">₹{order.total}</span>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-destructive hover:bg-destructive/10 rounded-xl"
+                        onClick={() => setOrderToDelete(order.id)}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Remove
+                      </Button>
                     </div>
                   </div>
                 ))
@@ -479,6 +502,51 @@ export default function Storefront() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Order Confirmation Modal */}
+      <AnimatePresence>
+        {orderToDelete && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/40 backdrop-blur-md"
+              onClick={() => setOrderToDelete(null)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-sm glass p-8 rounded-[32px] shadow-2xl text-center"
+            >
+              <div className="w-16 h-16 bg-destructive/10 text-destructive rounded-full flex items-center justify-center mx-auto mb-6">
+                <Trash2 className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Remove Order?</h3>
+              <p className="text-text-main/50 text-sm mb-8">
+                This will remove the order from your history. This action cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <Button 
+                  variant="ghost" 
+                  className="flex-1 rounded-xl h-12" 
+                  onClick={() => setOrderToDelete(null)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  variant="destructive"
+                  className="flex-1 rounded-xl h-12 bg-destructive text-white shadow-lg shadow-destructive/20" 
+                  onClick={deleteOrder}
+                >
+                  Remove
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

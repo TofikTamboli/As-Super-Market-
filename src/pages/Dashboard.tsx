@@ -93,6 +93,7 @@ export default function Dashboard() {
   };
 
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     // Sync products
@@ -158,6 +159,17 @@ export default function Dashboard() {
       setProductToDelete(null);
     } catch (error: any) {
       toast.error('Failed to delete product');
+    }
+  };
+
+  const deleteOrder = async () => {
+    if (!orderToDelete) return;
+    try {
+      await deleteDoc(doc(db, 'orders', orderToDelete));
+      toast.success('Order deleted');
+      setOrderToDelete(null);
+    } catch (error: any) {
+      toast.error('Failed to delete order');
     }
   };
 
@@ -285,14 +297,24 @@ export default function Dashboard() {
                                 <p className="text-text-main/40 text-[10px] uppercase tracking-wider font-bold">Total</p>
                                 <p className="font-bold text-success text-lg">₹{order.total}</p>
                               </div>
-                              <Button 
-                                size="sm" 
-                                className="rounded-lg bg-success hover:bg-success/90 text-white gap-2"
-                                onClick={() => toggleOrderComplete(order.id, order.isCompleted)}
-                              >
-                                <CheckCircle2 className="w-4 h-4" />
-                                Mark Complete
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost"
+                                  className="rounded-lg text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() => setOrderToDelete(order.id)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  className="rounded-lg bg-success hover:bg-success/90 text-white gap-2"
+                                  onClick={() => toggleOrderComplete(order.id, order.isCompleted)}
+                                >
+                                  <CheckCircle2 className="w-4 h-4" />
+                                  Mark Complete
+                                </Button>
+                              </div>
                             </div>
                           </motion.div>
                         ))}
@@ -327,14 +349,24 @@ export default function Dashboard() {
                               <h4 className="font-medium text-text-main">{order.clientName}</h4>
                               <p className="text-xs text-text-muted">₹{order.total} • {new Date(order.createdAt?.seconds * 1000).toLocaleDateString()}</p>
                             </div>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="text-text-main/40 hover:text-primary"
-                              onClick={() => toggleOrderComplete(order.id, order.isCompleted)}
-                            >
-                              Revert
-                            </Button>
+                            <div className="flex gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-text-main/40 hover:text-destructive"
+                                onClick={() => setOrderToDelete(order.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-text-main/40 hover:text-primary"
+                                onClick={() => toggleOrderComplete(order.id, order.isCompleted)}
+                              >
+                                Revert
+                              </Button>
+                            </div>
                           </div>
                           <div className="text-[10px] text-text-main/40 border-t border-black/5 pt-2">
                             <p>{order.address} • {order.phone}</p>
@@ -540,6 +572,51 @@ export default function Dashboard() {
                   variant="destructive"
                   className="flex-1 rounded-xl h-12 bg-destructive text-white shadow-lg shadow-destructive/20" 
                   onClick={deleteProduct}
+                >
+                  Delete
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Order Confirmation Modal */}
+      <AnimatePresence>
+        {orderToDelete && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/40 backdrop-blur-md"
+              onClick={() => setOrderToDelete(null)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-sm glass p-8 rounded-[32px] shadow-2xl text-center"
+            >
+              <div className="w-16 h-16 bg-destructive/10 text-destructive rounded-full flex items-center justify-center mx-auto mb-6">
+                <Trash2 className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Delete Order?</h3>
+              <p className="text-text-main/50 text-sm mb-8">
+                This action cannot be undone. This order will be permanently removed from history.
+              </p>
+              <div className="flex gap-3">
+                <Button 
+                  variant="ghost" 
+                  className="flex-1 rounded-xl h-12" 
+                  onClick={() => setOrderToDelete(null)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  variant="destructive"
+                  className="flex-1 rounded-xl h-12 bg-destructive text-white shadow-lg shadow-destructive/20" 
+                  onClick={deleteOrder}
                 >
                   Delete
                 </Button>
