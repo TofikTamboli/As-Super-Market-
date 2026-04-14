@@ -4,7 +4,7 @@ import { auth } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ShoppingBasket } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 
 export default function Login() {

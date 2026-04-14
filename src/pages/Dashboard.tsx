@@ -3,12 +3,12 @@ import { collection, onSnapshot, query, orderBy, addDoc, updateDoc, doc, serverT
 import { db, auth } from '../lib/firebase';
 import { Product, Order, UserRole } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '../components/ui/input';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Badge } from '../components/ui/badge';
+import { ScrollArea } from '../components/ui/scroll-area';
 import { Plus, Package, ClipboardList, CheckCircle2, LogOut, Trash2, LayoutDashboard, Settings, Home, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';

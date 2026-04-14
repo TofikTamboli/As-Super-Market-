@@ -4,11 +4,12 @@ import { db, auth } from '../lib/firebase';
 import { Product, OrderItem, PaymentMode, Order } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import ProductCard from '../components/ProductCard';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from '@/components/ui/sheet';
-import { ShoppingCart, Search, LogOut, Package, Trash2, Plus, Minus, Home, User, ShoppingBasket, ClipboardList } from 'lucide-react';
+import { Input } from '../components/ui/input';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from '../components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
+import { ShoppingCart, Search, LogOut, Package, Trash2, Plus, Minus, Home, User, ShoppingBasket, ClipboardList, CreditCard, MapPin, Phone } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -63,6 +64,8 @@ export default function Storefront() {
   const [phone, setPhone] = useState('');
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('UPI');
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+  const [checkoutItems, setCheckoutItems] = useState<OrderItem[]>([]);
   const [activeTab, setActiveTab] = useState<'store' | 'orders' | 'profile'>('store');
   const [clientOrders, setClientOrders] = useState<Order[]>([]);
 
@@ -139,14 +142,31 @@ export default function Storefront() {
   };
 
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const checkoutTotal = checkoutItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+  const handleBuyNow = (product: Product) => {
+    setCheckoutItems([{
+      productId: product.id,
+      title: product.title,
+      price: product.price,
+      quantity: 1
+    }]);
+    setIsCheckoutModalOpen(true);
+  };
+
+  const handleCartCheckout = () => {
+    setCheckoutItems(cart);
+    setIsCheckoutModalOpen(true);
+    setIsCartOpen(false);
+  };
 
   const handleCheckout = async () => {
     if (!address || !phone) {
       toast.error('Please provide address and phone number');
       return;
     }
-    if (cart.length === 0) {
-      toast.error('Your cart is empty');
+    if (checkoutItems.length === 0) {
+      toast.error('No items to checkout');
       return;
     }
 
@@ -158,18 +178,24 @@ export default function Storefront() {
         clientEmail: user?.email,
         address,
         phone,
-        items: cart,
+        items: checkoutItems,
         paymentMode,
-        total: cartTotal,
+        total: checkoutTotal + 40, // Including delivery
         isCompleted: false,
         createdAt: serverTimestamp(),
       });
       
-      setCart([]);
+      // If we checked out from cart, clear the cart
+      if (JSON.stringify(checkoutItems) === JSON.stringify(cart)) {
+        setCart([]);
+      }
+      
       setAddress('');
       setPhone('');
-      setIsCartOpen(false);
+      setIsCheckoutModalOpen(false);
+      setCheckoutItems([]);
       toast.success('Order placed successfully!');
+      setActiveTab('orders');
     } catch (error: any) {
       console.error(error);
       toast.error('Failed to place order: ' + error.message);
@@ -312,10 +338,9 @@ export default function Storefront() {
                   
                   <Button 
                     className="w-full h-12 rounded-xl bg-text-main hover:bg-text-main/90 text-white font-semibold transition-all active:scale-[0.98]"
-                    onClick={handleCheckout}
-                    disabled={isCheckingOut}
+                    onClick={handleCartCheckout}
                   >
-                    {isCheckingOut ? 'Processing...' : 'Proceed to Checkout'}
+                    Proceed to Checkout
                   </Button>
                 </div>
               )}
@@ -365,6 +390,7 @@ export default function Storefront() {
                         key={product.id} 
                         product={product} 
                         onAddToCart={addToCart} 
+                        onBuyNow={handleBuyNow}
                       />
                     ))}
                   </div>
@@ -496,6 +522,96 @@ export default function Storefront() {
           <LogOut className="w-6 h-6" />
         </Button>
       </nav>
+
+      {/* Checkout Modal */}
+      <Dialog open={isCheckoutModalOpen} onOpenChange={setIsCheckoutModalOpen}>
+        <DialogContent className="sm:max-w-[450px] glass-drawer border-white/40 rounded-3xl p-0 overflow-hidden">
+          <DialogHeader className="p-8 pb-4">
+            <DialogTitle className="text-2xl font-bold">Checkout</DialogTitle>
+            <DialogDescription>
+              Complete your order by providing delivery details.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="p-8 pt-0 space-y-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center gap-2">
+                  <MapPin className="w-3 h-3" /> Delivery Address
+                </label>
+                <Input 
+                  placeholder="Street, House No, Area..." 
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className="bg-white/50 border-black/10 rounded-xl h-12"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center gap-2">
+                  <Phone className="w-3 h-3" /> Contact Number
+                </label>
+                <Input 
+                  placeholder="+91 XXXXX XXXXX" 
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="bg-white/50 border-black/10 rounded-xl h-12"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <label className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center gap-2">
+                <CreditCard className="w-3 h-3" /> Payment Mode
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <div 
+                  className={cn(
+                    "p-4 rounded-xl border-2 cursor-pointer transition-all flex flex-col items-center gap-2",
+                    paymentMode === 'UPI' ? "border-primary bg-primary/5" : "border-black/5 hover:border-black/10"
+                  )}
+                  onClick={() => setPaymentMode('UPI')}
+                >
+                  <span className="font-bold text-sm">UPI</span>
+                  <span className="text-[10px] text-text-muted">Instant Pay</span>
+                </div>
+                <div 
+                  className={cn(
+                    "p-4 rounded-xl border-2 cursor-pointer transition-all flex flex-col items-center gap-2",
+                    paymentMode === 'COD' ? "border-primary bg-primary/5" : "border-black/5 hover:border-black/10"
+                  )}
+                  onClick={() => setPaymentMode('COD')}
+                >
+                  <span className="font-bold text-sm">COD</span>
+                  <span className="text-[10px] text-text-muted">Cash on Delivery</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-black/5 rounded-2xl p-6 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-text-muted">Items ({checkoutItems.length})</span>
+                <span className="font-medium">₹{checkoutTotal}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-text-muted">Delivery Fee</span>
+                <span className="font-medium">₹40</span>
+              </div>
+              <div className="flex justify-between text-lg font-bold pt-2 border-t border-black/10">
+                <span>Total Amount</span>
+                <span className="text-primary">₹{checkoutTotal + 40}</span>
+              </div>
+            </div>
+
+            <Button 
+              className="w-full h-14 rounded-2xl bg-text-main hover:bg-text-main/90 text-white font-bold text-lg shadow-lg transition-all active:scale-[0.98]"
+              onClick={handleCheckout}
+              disabled={isCheckingOut}
+            >
+              {isCheckingOut ? 'Processing...' : 'Place Order Now'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

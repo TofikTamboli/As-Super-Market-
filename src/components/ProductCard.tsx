@@ -2,15 +2,16 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { Plus } from 'lucide-react';
 import { Product } from '../types';
-import { Button } from '@/components/ui/button';
+import { Button } from './ui/button';
 
 interface ProductCardProps {
   product: Product;
   onAddToCart: (product: Product) => void;
+  onBuyNow: (product: Product) => void;
   key?: React.Key;
 }
 
-export default function ProductCard({ product, onAddToCart }: ProductCardProps) {
+export default function ProductCard({ product, onAddToCart, onBuyNow }: ProductCardProps) {
   return (
     <motion.div 
       whileHover={{ y: -4 }}
@@ -35,14 +36,26 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
         <h3 className="font-semibold text-lg text-text-main leading-tight mb-1">{product.title}</h3>
         <p className="text-sm text-text-muted mb-4">{product.category}</p>
         
-        <div className="flex items-center justify-between mt-auto">
-          <span className="text-lg font-bold text-text-main">₹{product.price}</span>
-          <Button 
-            onClick={() => onAddToCart(product)}
-            className="rounded-xl bg-primary hover:bg-primary/90 text-white font-semibold text-xs px-4 h-9 transition-transform active:scale-95"
-          >
-            ADD +
-          </Button>
+        <div className="flex flex-col gap-3 mt-auto">
+          <div className="flex items-center justify-between">
+            <span className="text-lg font-bold text-text-main">₹{product.price}</span>
+            <span className="text-xs text-text-muted">Incl. taxes</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Button 
+              onClick={() => onAddToCart(product)}
+              variant="outline"
+              className="rounded-xl border-primary/20 text-primary hover:bg-primary/5 font-semibold text-xs h-9 transition-transform active:scale-95"
+            >
+              ADD +
+            </Button>
+            <Button 
+              onClick={() => onBuyNow(product)}
+              className="rounded-xl bg-primary hover:bg-primary/90 text-white font-semibold text-xs h-9 transition-transform active:scale-95"
+            >
+              BUY NOW
+            </Button>
+          </div>
         </div>
       </div>
     </motion.div>
