@@ -1,0 +1,56 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@theme {
+  --color-primary: #007AFF;
+  --color-background: #F5F5F7;
+  --color-surface: rgba(255, 255, 255, 0.6);
+  --color-success: #34C759;
+  --color-text-main: #1D1D1F;
+  --color-text-muted: #86868B;
+  
+  --color-border: rgba(0, 0, 0, 0.05);
+  --color-input: rgba(0, 0, 0, 0.1);
+  --color-ring: #007AFF;
+  --color-destructive: #FF3B30;
+  
+  --radius-xl: 16px;
+  --radius-lg: 12px;
+  --radius-2xl: 20px;
+  
+  --font-sans: "Helvetica Neue", Arial, sans-serif;
+}
+
+@layer utilities {
+  .glass {
+    backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  
+  .glass-card {
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .glass-drawer {
+    backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    background-color: #F5F5F7;
+    background-image: 
+      radial-gradient(circle at top left, #E8F1FF, transparent 40%), 
+      radial-gradient(circle at bottom right, #FFE8E8, transparent 40%);
+    @apply text-text-main font-sans min-h-screen;
+  }
+}
